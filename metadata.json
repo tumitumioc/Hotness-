@@ -1,0 +1,6 @@
+{
+  "name": "Hotness - Premium Video Streaming Platform",
+  "description": "Hotness is a next-generation video streaming platform with high speed video streaming, smart search, and curated categories.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

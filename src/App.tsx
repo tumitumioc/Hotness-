@@ -1,11 +1,17 @@
 /**
  * ============================================================================
- * 🔥 HOTNESS STREAMING - CORE APPLICATION ENGINE
+ * 🔥 HOTNESS STREAMING - PRODUCTION-GRADE ROUTING & VIDEO ENGINE
  * ============================================================================
  * 
- * 📁 STATIC ASSETS LOCATION:
- *   - Favicon: `/public/logo.fevicon.png` (or `/public/logo.png`)
- *   - Site Logo: `/public/logo.png` (Automatically loads if placed in `/public/`)
+ * 🌐 PRODUCTION URL STRUCTURE:
+ *   - Home Feed: `/`
+ *   - Category Pages: `/category/bangladeshi`, `/category/chinese`, etc.
+ *   - Video Watch Pages: `/watch/:videoId/:slug` (e.g. `/watch/123e4567/exclusive-video`)
+ *   - Search Page: `/search?q=query`
+ * 
+ * 📱 NATIVE BACK/FORWARD HISTORY (Like YouTube & Facebook):
+ *   - Back button navigates between pages/videos without exiting the site.
+ *   - Direct deep-links automatically restore exact video or category state.
  * 
  * 🗄️ DATABASE INTEGRATION (Supabase PostgreSQL):
  *   - Table `videos`: id, title, thumbnail_url, video_url, channel_name, channel_avatar,
@@ -15,15 +21,10 @@
  *                            in_feed_banner_image_url, in_feed_banner_link_url,
  *                            watch_page_banner_image_url, watch_page_banner_link_url,
  *                            logo_url, tiktok_url, facebook_url, telegram_url, youtube_url, instagram_url
- * 
- * 🛡️ SECURITY FEATURES:
- *   - URL scheme sanitizer against XSS / injection
- *   - Tab blur / privacy shield
- *   - Safe error handling on VAST XML parsing & database sync
  * ============================================================================
  */
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
   Search, X, Image as ImageIcon, Play, CheckCircle, 
   ThumbsUp, ThumbsDown, Share2, ArrowLeft, Eye, Clock,
@@ -41,6 +42,33 @@ function sanitizeUrl(url?: string | null): string {
     return trimmed;
   }
   return '#';
+}
+
+/**
+ * Generates an SEO & human-friendly URL slug from any English or Bengali video title
+ */
+export function generateVideoSlug(title: string): string {
+  if (!title) return 'video';
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s\u0980-\u09FF-]/g, '') // Keep alphanumeric, Bengali characters and hyphens
+    .replace(/\s+/g, '-')                 // Replace spaces with hyphens
+    .replace(/-+/g, '-')                  // Remove duplicate hyphens
+    .replace(/^-+|-+$/g, '') || 'video';
+}
+
+/**
+ * Returns the exact direct shareable URL for a video based on its title
+ */
+export function getVideoWatchPath(videoId: string, title: string): string {
+  const slug = encodeURIComponent(generateVideoSlug(title));
+  return `/watch/${encodeURIComponent(videoId)}/${slug}`;
+}
+
+export function getVideoFullShareUrl(video: VideoItem): string {
+  const origin = window.location.origin;
+  return `${origin}${getVideoWatchPath(video.id, video.title)}`;
 }
 
 /**
@@ -111,19 +139,16 @@ export interface VideoItem {
 }
 
 const CATEGORIES = [
-  { id: 'home', label: 'Home' },
-  { id: 'bangladeshi', label: 'Bangladeshi Video' },
-  { id: 'chinese', label: 'Chinese Video' },
-  { id: 'japanese', label: 'Japanese Video' },
-  { id: 'african', label: 'African Video' },
-  { id: 'others', label: 'Others video' },
+  { id: 'home', label: 'Home', path: '/' },
+  { id: 'bangladeshi', label: 'Bangladeshi Video', path: '/category/bangladeshi' },
+  { id: 'chinese', label: 'Chinese Video', path: '/category/chinese' },
+  { id: 'japanese', label: 'Japanese Video', path: '/category/japanese' },
+  { id: 'african', label: 'African Video', path: '/category/african' },
+  { id: 'others', label: 'Others video', path: '/category/others' },
 ];
 
 /**
- * Smart Logo Component that supports:
- * 1. Admin Supabase logo (`siteSettings.logo_url`)
- * 2. Static public logo (`/logo.png`)
- * 3. Graceful fallback icon if no image exists yet
+ * Smart Logo Component
  */
 const BrandLogo: React.FC<{
   logoUrl?: string;
@@ -155,7 +180,6 @@ const BrandLogo: React.FC<{
         alt="Hotness Logo" 
         onError={() => {
           if (imgSrc !== '/logo.png') {
-            // Try fallback to local /logo.png
             setImgSrc('/logo.png');
           } else {
             setHasError(true);
@@ -168,10 +192,11 @@ const BrandLogo: React.FC<{
 };
 
 export default function App() {
-  const [activeNav, setActiveNav] = useState('home');
+  // Navigation / Route state
+  const [activeCategory, setActiveCategory] = useState<string>('home');
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeVideo, setActiveVideo] = useState<VideoItem | null>(null);
   
   // Supabase dynamic state
   const [videos, setVideos] = useState<VideoItem[]>([]);
@@ -193,6 +218,12 @@ export default function App() {
     youtube_url: 'https://youtube.com',
     instagram_url: 'https://instagram.com',
   });
+
+  // Active Video Item helper
+  const activeVideo = useMemo(() => {
+    if (!activeVideoId) return null;
+    return videos.find(v => v.id === activeVideoId) || null;
+  }, [activeVideoId, videos]);
 
   // Real view counts persisted in localStorage
   const [videoViews, setVideoViews] = useState<Record<string, number>>(() => {
@@ -233,6 +264,99 @@ export default function App() {
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const videoPlayerRef = useRef<HTMLVideoElement>(null);
+
+  // ========================================================
+  // 🧭 ROUTE PARSER & HISTORY SYNC ENGINE (YouTube/FB Style)
+  // ========================================================
+  const parseCurrentUrl = useCallback(() => {
+    const pathname = window.location.pathname;
+    const search = window.location.search;
+    const urlParams = new URLSearchParams(search);
+
+    // 1. Check Watch Page `/watch/:id/:slug` or `/?v=:id`
+    const watchMatch = pathname.match(/^\/watch\/([^/]+)/);
+    const queryVideoId = urlParams.get('v') || urlParams.get('video');
+    const targetVideoId = watchMatch ? decodeURIComponent(watchMatch[1]) : queryVideoId;
+
+    if (targetVideoId) {
+      setActiveVideoId(targetVideoId);
+      return;
+    } else {
+      setActiveVideoId(null);
+    }
+
+    // 2. Check Search Page `/search?q=:query` or `/?q=:query`
+    const qParam = urlParams.get('q') || urlParams.get('search');
+    if (pathname.startsWith('/search') || qParam) {
+      setSearchQuery(qParam || '');
+      return;
+    }
+
+    // 3. Check Category Page `/category/:cat`
+    const categoryMatch = pathname.match(/^\/category\/([^/]+)/);
+    if (categoryMatch) {
+      const cat = decodeURIComponent(categoryMatch[1]);
+      setActiveCategory(cat);
+      setSearchQuery('');
+      return;
+    }
+
+    // 4. Default Home
+    setActiveCategory('home');
+    setSearchQuery('');
+  }, []);
+
+  // Listen to browser Back / Forward events (popstate)
+  useEffect(() => {
+    parseCurrentUrl();
+
+    const handlePopState = () => {
+      parseCurrentUrl();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [parseCurrentUrl]);
+
+  // Navigation action creators (Push state & update address bar)
+  const navigateToHome = () => {
+    setActiveVideoId(null);
+    setActiveCategory('home');
+    setSearchQuery('');
+    window.history.pushState({ page: 'home' }, '', '/');
+    document.title = 'Hotness - Premium Video Streaming Platform';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const navigateToCategory = (catId: string) => {
+    setActiveVideoId(null);
+    setActiveCategory(catId);
+    setSearchQuery('');
+    const targetPath = catId === 'home' ? '/' : `/category/${catId}`;
+    window.history.pushState({ page: 'category', catId }, '', targetPath);
+    const foundCat = CATEGORIES.find(c => c.id === catId);
+    document.title = foundCat ? `${foundCat.label} - Hotness Streaming` : 'Hotness Streaming';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const navigateToVideo = (video: VideoItem) => {
+    setActiveVideoId(video.id);
+    const targetPath = getVideoWatchPath(video.id, video.title);
+    window.history.pushState({ page: 'watch', videoId: video.id }, '', targetPath);
+    document.title = `${video.title} - Hotness Streaming`;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const navigateToSearch = (query: string) => {
+    setActiveVideoId(null);
+    setSearchQuery(query);
+    if (query.trim()) {
+      window.history.pushState({ page: 'search', query }, '', `/search?q=${encodeURIComponent(query)}`);
+      document.title = `Search: "${query}" - Hotness Streaming`;
+    } else {
+      navigateToHome();
+    }
+  };
 
   // ========================================================
   // 🔄 SUPABASE LIVE DATA FETCHING & REALTIME LISTENER
@@ -305,6 +429,13 @@ export default function App() {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  // Sync initial title if active video is present on load
+  useEffect(() => {
+    if (activeVideo) {
+      document.title = `${activeVideo.title} - Hotness Streaming`;
+    }
+  }, [activeVideo]);
 
   // 🎬 VAST Ad initialization when a video is clicked
   useEffect(() => {
@@ -452,12 +583,10 @@ export default function App() {
   };
 
   // ========================================================
-  // ⏱️ REAL VIEW COUNT: প্রতি ১০ মিনিট পরপর কাউন্ট ইনক্রিমেন্ট হবে (10-minute View Increment System)
+  // ⏱️ REAL VIEW COUNT: প্রতি ১০ মিনিট পরপর কাউন্ট ইনক্রিমেন্ট হবে
   // ========================================================
   useEffect(() => {
     if (!activeVideo) return;
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
 
     // Initial view count on opening video (after initial buffer time)
     const initialViewTimer = setTimeout(() => {
@@ -558,12 +687,15 @@ export default function App() {
     }, 2000);
   };
 
+  // 🔗 Title-based Direct Share
   const handleShare = async () => {
-    const shareUrl = window.location.href;
+    if (!activeVideo) return;
+    const shareUrl = getVideoFullShareUrl(activeVideo);
     if (navigator.share) {
       try {
         await navigator.share({
-          title: activeVideo?.title || 'Hotness Streaming',
+          title: activeVideo.title,
+          text: `Watch "${activeVideo.title}" on Hotness Streaming:`,
           url: shareUrl,
         });
         return;
@@ -576,14 +708,14 @@ export default function App() {
 
   const displayedVideos = useMemo(() => {
     return videos.filter(video => {
-      const matchesCategory = activeNav === 'home' || video.category === activeNav;
+      const matchesCategory = activeCategory === 'home' || video.category === activeCategory;
       const matchesSearch = searchQuery.trim() === '' || 
         video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         video.channelName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         video.category.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     });
-  }, [videos, activeNav, searchQuery]);
+  }, [videos, activeCategory, searchQuery]);
 
   const suggestedVideos = useMemo(() => {
     return videos.filter(v => v.id !== activeVideo?.id);
@@ -623,11 +755,7 @@ export default function App() {
           
           {/* Brand Logo Slot & Typography */}
           <div 
-            onClick={() => {
-              setActiveVideo(null);
-              setActiveNav('home');
-              setSearchQuery('');
-            }} 
+            onClick={navigateToHome} 
             className="flex items-center gap-3 cursor-pointer shrink-0 select-none group"
           >
             <BrandLogo logoUrl={siteSettings.logo_url} sizeClass="w-12 h-12" />
@@ -642,18 +770,15 @@ export default function App() {
             </div>
           </div>
 
-          {/* Clean Light Theme Nav Bar (Desktop) */}
+          {/* Clean Light Theme Nav Bar (Desktop) with URL Push State */}
           <nav className="hidden lg:flex items-center gap-2 p-1.5 rounded-2xl bg-slate-100/90 border border-slate-200">
             {CATEGORIES.map((item) => {
-              const isActive = !activeVideo && activeNav === item.id;
+              const isActive = !activeVideoId && !searchQuery && activeCategory === item.id;
 
               return (
                 <button
                   key={item.id}
-                  onClick={() => {
-                    setActiveVideo(null);
-                    setActiveNav(item.id);
-                  }}
+                  onClick={() => navigateToCategory(item.id)}
                   className={`relative px-4 py-2 text-[13px] font-bold tracking-wide transition-all duration-200 flex items-center gap-2 cursor-pointer select-none rounded-xl ${
                     isActive
                       ? 'text-white bg-gradient-to-r from-red-600 via-rose-600 to-red-600 shadow-md shadow-red-500/30 -translate-y-0.5'
@@ -695,15 +820,12 @@ export default function App() {
         {/* Mobile Light Navigation Strip */}
         <div className="lg:hidden px-3 pb-2 pt-1.5 overflow-x-auto scrollbar-none flex items-center gap-1.5 border-t border-slate-100">
           {CATEGORIES.map((item) => {
-            const isActive = !activeVideo && activeNav === item.id;
+            const isActive = !activeVideoId && !searchQuery && activeCategory === item.id;
 
             return (
               <button
                 key={item.id}
-                onClick={() => {
-                  setActiveVideo(null);
-                  setActiveNav(item.id);
-                }}
+                onClick={() => navigateToCategory(item.id)}
                 className={`relative px-3.5 py-1.5 text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 rounded-lg ${
                   isActive
                     ? 'text-white bg-gradient-to-r from-red-600 to-rose-600 shadow-sm'
@@ -765,7 +887,7 @@ export default function App() {
               Searching for: <strong className="text-red-600">"{searchQuery}"</strong> ({displayedVideos.length} found)
             </span>
             <button 
-              onClick={() => setSearchQuery('')} 
+              onClick={navigateToHome} 
               className="text-xs font-bold text-red-600 hover:text-red-700 underline cursor-pointer"
             >
               Clear Search
@@ -782,9 +904,15 @@ export default function App() {
             {/* Left Column: Video Player + Meta details */}
             <div className="flex-1 min-w-0">
               
-              {/* Back to Home Button */}
+              {/* Back to Home / Previous History Button (YouTube Style) */}
               <button 
-                onClick={() => setActiveVideo(null)}
+                onClick={() => {
+                  if (window.history.length > 1) {
+                    window.history.back();
+                  } else {
+                    navigateToHome();
+                  }
+                }}
                 className="mb-4 inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-red-600 bg-white px-3.5 py-1.5 rounded-xl border border-slate-200 shadow-sm transition-colors cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -945,9 +1073,10 @@ export default function App() {
                       </button>
                     </div>
 
-                    {/* Share Button */}
+                    {/* Share Button (Generates Title-based unique Link) */}
                     <button
                       onClick={handleShare}
+                      title="ভিডিওর টাইটেল-বেজড লিঙ্ক কপি ও শেয়ার করুন"
                       className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200/80 text-slate-700 border border-slate-200 px-4 py-2 rounded-full text-xs font-bold shadow-xs transition-all cursor-pointer"
                     >
                       <Share2 className="w-4 h-4" />
@@ -1032,10 +1161,7 @@ export default function App() {
                 {suggestedVideos.map(video => (
                   <div
                     key={video.id}
-                    onClick={() => {
-                      setActiveVideo(video);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
+                    onClick={() => navigateToVideo(video)}
                     className="flex gap-3 group cursor-pointer bg-white p-2 rounded-2xl border border-slate-200/70 hover:border-red-300 hover:shadow-md transition-all"
                   >
                     {/* Thumbnail */}
@@ -1088,7 +1214,7 @@ export default function App() {
                     
                     {/* Video Card */}
                     <div 
-                      onClick={() => setActiveVideo(video)}
+                      onClick={() => navigateToVideo(video)}
                       className="group flex flex-col bg-white rounded-2xl overflow-hidden border border-slate-200/80 shadow-xs hover:shadow-xl hover:border-red-300 transition-all duration-300 cursor-pointer"
                     >
                       {/* Thumbnail with overlay duration */}
@@ -1192,10 +1318,7 @@ export default function App() {
                 </p>
                 {searchQuery && (
                   <button
-                    onClick={() => {
-                      setSearchQuery('');
-                      setActiveNav('home');
-                    }}
+                    onClick={navigateToHome}
                     className="mt-5 px-5 py-2.5 bg-red-600 text-white text-xs font-bold rounded-xl shadow-md hover:bg-red-700 transition cursor-pointer"
                   >
                     সব ভিডিও দেখুন
@@ -1225,7 +1348,7 @@ export default function App() {
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
                     setIsSearchOpen(false);
-                    setActiveVideo(null);
+                    navigateToSearch(searchQuery);
                   }
                 }}
                 placeholder="ভিডিওর নাম, ক্যাটাগরি বা চ্যানেল খুঁজুন..."
@@ -1265,11 +1388,7 @@ export default function App() {
             
             {/* Brand Logo & Name */}
             <div 
-              onClick={() => {
-                setActiveVideo(null);
-                setActiveNav('home');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }} 
+              onClick={navigateToHome} 
               className="flex items-center gap-3 cursor-pointer select-none group"
             >
               <BrandLogo logoUrl={siteSettings.logo_url} sizeClass="w-10 h-10" />
@@ -1334,7 +1453,7 @@ export default function App() {
 
                 {/* Twitter / X */}
                 <a 
-                  href="https://x.com" 
+                  href={sanitizeUrl('https://x.com')} 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   title="X (Twitter)"

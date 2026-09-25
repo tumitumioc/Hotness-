@@ -5,11 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hotness - Premium Video Streaming Platform</title>
     
-    <!-- Favicon Links (Automatic Detection for logo.fevicon.png and logo.png in /public) -->
+    <!-- Favicon & PWA Links (Automatic Detection for logo.fevicon.png and logo.png in /public) -->
     <link rel="icon" type="image/png" href="/logo.fevicon.png" />
-    <link rel="apple-touch-icon" href="/logo.fevicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="shortcut icon" href="/logo.fevicon.png" />
     <link rel="alternate icon" href="/logo.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <meta name="theme-color" content="#dc2626" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Hotness" />
+    <meta name="mobile-web-app-capable" content="yes" />
 
     <meta name="description" content="Hotness is a next-generation video streaming platform with high speed video streaming, smart search, and curated categories." />
     <meta property="og:title" content="Hotness - Premium Video Streaming Platform" />
@@ -17,11 +24,13 @@
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
 
-    <!-- HilltopAds Domain Verification -->
+    <!-- HilltopAds Domain Verification & Revenue Optimizer -->
     <meta name="65e3dcacc7b9e2664b3517d6248ca365e51875ff" content="65e3dcacc7b9e2664b3517d6248ca365e51875ff" />
+    <meta name="referrer" content="no-referrer-when-downgrade" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
+

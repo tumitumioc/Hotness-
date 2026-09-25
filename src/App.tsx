@@ -482,11 +482,12 @@ export default function App() {
     watch_page_banner_image_url: '',
     watch_page_banner_link_url: '#',
     logo_url: '',
-    tiktok_url: 'https://tiktok.com',
-    facebook_url: 'https://facebook.com',
-    telegram_url: 'https://telegram.org',
-    youtube_url: 'https://youtube.com',
-    instagram_url: 'https://instagram.com',
+    tiktok_url: 'https://vm.tiktok.com/ZS9AqkXa1y4WQ-vP2Ar/',
+    facebook_url: 'https://www.facebook.com/hotnessyou',
+    telegram_url: 'https://t.me/Hotnessofficial',
+    youtube_url: 'https://youtube.com/@hotnessyou',
+    twitter_url: 'https://x.com/hotness_you',
+    instagram_url: 'https://www.instagram.com/hotnessyou',
   });
 
   // Active Video Item helper
@@ -1823,10 +1824,10 @@ export default function App() {
                 
                 {/* Facebook */}
                 <a 
-                  href={sanitizeUrl(siteSettings.facebook_url || 'https://facebook.com')} 
+                  href={sanitizeUrl(siteSettings.facebook_url || 'https://www.facebook.com/hotnessyou')} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  title="Facebook"
+                  title="Facebook - @hotnessyou"
                   className="w-9 h-9 rounded-xl bg-[#1877F2]/10 hover:bg-[#1877F2] text-[#1877F2] hover:text-white flex items-center justify-center transition-all duration-200 border border-[#1877F2]/20 hover:scale-110 shadow-sm"
                 >
                   <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -1836,10 +1837,10 @@ export default function App() {
 
                 {/* Telegram */}
                 <a 
-                  href={sanitizeUrl(siteSettings.telegram_url || 'https://telegram.org')} 
+                  href={sanitizeUrl(siteSettings.telegram_url || 'https://t.me/Hotnessofficial')} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  title="Telegram"
+                  title="Telegram - @Hotnessofficial"
                   className="w-9 h-9 rounded-xl bg-[#229ED9]/10 hover:bg-[#229ED9] text-[#229ED9] hover:text-white flex items-center justify-center transition-all duration-200 border border-[#229ED9]/20 hover:scale-110 shadow-sm"
                 >
                   <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -1849,10 +1850,10 @@ export default function App() {
 
                 {/* YouTube */}
                 <a 
-                  href={sanitizeUrl(siteSettings.youtube_url || 'https://youtube.com')} 
+                  href={sanitizeUrl(siteSettings.youtube_url || 'https://youtube.com/@hotnessyou')} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  title="YouTube"
+                  title="YouTube - @hotnessyou"
                   className="w-9 h-9 rounded-xl bg-[#FF0000]/10 hover:bg-[#FF0000] text-[#FF0000] hover:text-white flex items-center justify-center transition-all duration-200 border border-[#FF0000]/20 hover:scale-110 shadow-sm"
                 >
                   <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -1862,10 +1863,10 @@ export default function App() {
 
                 {/* Twitter / X */}
                 <a 
-                  href={sanitizeUrl('https://x.com')} 
+                  href={sanitizeUrl(siteSettings.twitter_url || 'https://x.com/hotness_you')} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  title="X (Twitter)"
+                  title="X (Twitter) - @hotness_you"
                   className="w-9 h-9 rounded-xl bg-slate-900/10 hover:bg-slate-900 text-slate-900 hover:text-white flex items-center justify-center transition-all duration-200 border border-slate-900/20 hover:scale-110 shadow-sm"
                 >
                   <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
@@ -1875,10 +1876,10 @@ export default function App() {
 
                 {/* Instagram */}
                 <a 
-                  href={sanitizeUrl(siteSettings.instagram_url || 'https://instagram.com')} 
+                  href={sanitizeUrl(siteSettings.instagram_url || 'https://www.instagram.com/hotnessyou')} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  title="Instagram"
+                  title="Instagram - @hotnessyou"
                   className="w-9 h-9 rounded-xl bg-[#E4405F]/10 hover:bg-[#E4405F] text-[#E4405F] hover:text-white flex items-center justify-center transition-all duration-200 border border-[#E4405F]/20 hover:scale-110 shadow-sm"
                 >
                   <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -1888,10 +1889,10 @@ export default function App() {
 
                 {/* TikTok */}
                 <a 
-                  href={sanitizeUrl(siteSettings.tiktok_url || 'https://tiktok.com')} 
+                  href={sanitizeUrl(siteSettings.tiktok_url || 'https://vm.tiktok.com/ZS9AqkXa1y4WQ-vP2Ar/')} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  title="TikTok"
+                  title="TikTok - @hotness"
                   className="w-9 h-9 rounded-xl bg-black/10 hover:bg-black text-slate-900 hover:text-white flex items-center justify-center transition-all duration-200 border border-slate-900/20 hover:scale-110 shadow-sm"
                 >
                   <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">

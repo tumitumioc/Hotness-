@@ -250,6 +250,55 @@ const HilltopHeaderBanner: React.FC<{
   );
 };
 
+/**
+ * HilltopAds Live 300x250 Banner (In-Feed & Watch Page)
+ */
+const Hilltop300x250Banner: React.FC<{
+  fallbackImageUrl?: string;
+  fallbackLinkUrl?: string;
+  className?: string;
+}> = ({ fallbackImageUrl, fallbackLinkUrl, className = '' }) => {
+  const adRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (fallbackImageUrl) return;
+    if (!adRef.current) return;
+
+    adRef.current.innerHTML = '';
+    const script = document.createElement('script');
+    script.src = '//dismalscrew.com/baX.VSsbdFG/lP0/Y/W/ca/ge/mI9/uLZxULlEk/PJThcg0vN/Tsg/1UMXj-kuteNBzkQL1hO/D/U/zqMJwe';
+    script.async = true;
+    script.referrerPolicy = 'no-referrer-when-downgrade';
+
+    adRef.current.appendChild(script);
+  }, [fallbackImageUrl]);
+
+  if (fallbackImageUrl) {
+    return (
+      <div className={`w-full flex justify-center ${className}`}>
+        <a 
+          href={sanitizeUrl(fallbackLinkUrl)} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="w-full block rounded-xl overflow-hidden"
+        >
+          <img 
+            src={fallbackImageUrl} 
+            alt="Sponsored Ad" 
+            className="w-full h-auto max-h-64 object-contain rounded-xl"
+          />
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`w-full flex justify-center items-center overflow-hidden min-h-[250px] ${className}`}>
+      <div ref={adRef} className="w-[300px] min-h-[250px] flex items-center justify-center" />
+    </div>
+  );
+};
+
 export default function App() {
   // Navigation / Route state
   const [activeCategory, setActiveCategory] = useState<string>('home');
@@ -1158,7 +1207,7 @@ export default function App() {
             <div className="w-full lg:w-96 shrink-0 flex flex-col gap-4">
               
               {/* ======================================================== */}
-              {/* 🔴 WATCH PAGE IN-STREAM SPONSORED BANNER                 */}
+              {/* 🔴 WATCH PAGE IN-STREAM SPONSORED BANNER (HILLTOPADS)    */}
               {/* ======================================================== */}
               <div className="w-full bg-white rounded-2xl border border-slate-200/80 p-3 shadow-xs">
                 <div className="flex items-center justify-between mb-2">
@@ -1171,27 +1220,10 @@ export default function App() {
                 </div>
 
                 {/* Banner Ad Display Slot */}
-                <div className="w-full rounded-xl overflow-hidden bg-slate-50 border border-slate-200 flex items-center justify-center min-h-[100px]">
-                  {siteSettings.watch_page_banner_image_url ? (
-                    <a 
-                      href={sanitizeUrl(siteSettings.watch_page_banner_link_url)} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="w-full h-full block"
-                    >
-                      <img 
-                        src={siteSettings.watch_page_banner_image_url} 
-                        alt="Sponsored Banner" 
-                        className="w-full h-auto object-cover"
-                      />
-                    </a>
-                  ) : (
-                    <div className="py-6 flex flex-col items-center justify-center text-slate-300">
-                      <ImageIcon className="w-6 h-6 mb-1 opacity-60" />
-                      <span className="text-[11px] font-medium tracking-wider">Watch Page Banner Slot</span>
-                    </div>
-                  )}
-                </div>
+                <Hilltop300x250Banner 
+                  fallbackImageUrl={siteSettings.watch_page_banner_image_url}
+                  fallbackLinkUrl={siteSettings.watch_page_banner_link_url}
+                />
               </div>
 
               {/* Suggested Videos Title */}
@@ -1321,25 +1353,10 @@ export default function App() {
                             <span className="text-[11px] font-bold text-slate-400">বিজ্ঞাপন</span>
                           </div>
 
-                          {siteSettings.in_feed_banner_image_url ? (
-                            <a 
-                              href={sanitizeUrl(siteSettings.in_feed_banner_link_url)} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              className="w-full block rounded-xl overflow-hidden"
-                            >
-                              <img 
-                                src={siteSettings.in_feed_banner_image_url} 
-                                alt="In-Feed Ad" 
-                                className="w-full h-auto max-h-48 object-contain rounded-xl"
-                              />
-                            </a>
-                          ) : (
-                            <div className="w-full py-8 border border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-300">
-                              <ImageIcon className="w-7 h-7 mb-1 opacity-50" />
-                              <span className="text-xs font-medium">In-Feed Native Banner Slot</span>
-                            </div>
-                          )}
+                          <Hilltop300x250Banner 
+                            fallbackImageUrl={siteSettings.in_feed_banner_image_url}
+                            fallbackLinkUrl={siteSettings.in_feed_banner_link_url}
+                          />
                         </div>
                       </div>
                     )}

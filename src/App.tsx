@@ -370,6 +370,11 @@ export default function App() {
   const [adClickThrough, setAdClickThrough] = useState<string>('');
   const [adProgressPercent, setAdProgressPercent] = useState<number>(0);
 
+  // 🎯 80% Video Mid-roll VAST Video Ad State
+  const [hasShown80PercentAd, setHasShown80PercentAd] = useState<boolean>(false);
+  const [showOverlay80Ad, setShowOverlay80Ad] = useState<boolean>(false);
+  const savedPlaybackTimeRef = useRef<number>(0);
+
   const searchInputRef = useRef<HTMLInputElement>(null);
   const videoPlayerRef = useRef<HTMLVideoElement>(null);
 
@@ -551,6 +556,11 @@ export default function App() {
 
   // 🎬 VAST Ad initialization when a video is clicked
   useEffect(() => {
+    // Reset mid-roll 80% ad state and saved timestamp on video switch
+    setHasShown80PercentAd(false);
+    setShowOverlay80Ad(false);
+    savedPlaybackTimeRef.current = 0;
+
     if (!activeVideo) {
       setIsAdPlaying(false);
       setAdMediaUrl('');
@@ -599,12 +609,50 @@ export default function App() {
   const handleSkipAd = () => {
     setIsAdPlaying(false);
     setAdMediaUrl('');
+    // Automatically resume main video from 80% timestamp if it was a mid-roll ad
+    setTimeout(() => {
+      if (videoPlayerRef.current && savedPlaybackTimeRef.current > 0) {
+        try {
+          videoPlayerRef.current.currentTime = savedPlaybackTimeRef.current;
+          videoPlayerRef.current.play().catch(() => {});
+        } catch (e) {}
+      }
+    }, 100);
   };
 
   const handleAdTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
     const vid = e.currentTarget;
     if (vid.duration) {
       setAdProgressPercent((vid.currentTime / vid.duration) * 100);
+    }
+  };
+
+  // 🎯 Main Video Progress Listener (Triggers Mid-roll VAST Video Ad at 80% Progress)
+  const handleMainVideoTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const vid = e.currentTarget;
+    if (!hasShown80PercentAd && vid.duration && vid.duration > 8) {
+      const progressRatio = vid.currentTime / vid.duration;
+      if (progressRatio >= 0.80) {
+        setHasShown80PercentAd(true);
+        savedPlaybackTimeRef.current = vid.currentTime;
+
+        const vastUrl = siteSettings.vast_tag_url?.trim();
+        if (vastUrl) {
+          const skipSecs = siteSettings.vast_skip_seconds || 6;
+          setIsAdPlaying(true);
+          setAdCountdown(skipSecs);
+          setAdProgressPercent(0);
+
+          parseVastXml(vastUrl).then(vastResult => {
+            if (vastResult?.mediaUrl) {
+              setAdMediaUrl(vastResult.mediaUrl);
+              setAdClickThrough(vastResult.clickThrough || '');
+            } else {
+              setIsAdPlaying(false);
+            }
+          });
+        }
+      }
     }
   };
 
@@ -1081,15 +1129,53 @@ export default function App() {
                     </div>
                   </div>
                 ) : (
-                  <video
-                    ref={videoPlayerRef}
-                    key={`main-${activeVideo.id}`}
-                    src={activeVideo.videoSrc}
-                    controls
-                    autoPlay
-                    playsInline
-                    className="w-full h-full object-contain"
-                  />
+                  <>
+                    <video
+                      ref={videoPlayerRef}
+                      key={`main-${activeVideo.id}`}
+                      src={activeVideo.videoSrc}
+                      controls
+                      autoPlay
+                      playsInline
+                      onLoadedMetadata={(e) => {
+                        if (savedPlaybackTimeRef.current > 0) {
+                          e.currentTarget.currentTime = savedPlaybackTimeRef.current;
+                          e.currentTarget.play().catch(() => {});
+                        }
+                      }}
+                      onTimeUpdate={handleMainVideoTimeUpdate}
+                      className="w-full h-full object-contain"
+                    />
+
+                    {/* 🎯 80% In-Player Video Overlay Ad */}
+                    {showOverlay80Ad && (
+                      <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-30 max-w-[94%] sm:max-w-[340px] w-full bg-slate-950/95 backdrop-blur-md border-2 border-amber-500/80 rounded-2xl p-2.5 shadow-[0_10px_30px_rgba(0,0,0,0.8)] animate-in slide-in-from-bottom-5 duration-300 pointer-events-auto">
+                        <div className="flex items-center justify-between pb-1.5 border-b border-white/10 mb-2">
+                          <div className="flex items-center gap-1.5">
+                            <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                              Sponsored
+                            </span>
+                            <span className="text-[11px] text-white/90 font-bold">স্পন্সরড বিজ্ঞাপন (৮০%)</span>
+                          </div>
+                          <button 
+                            onClick={() => setShowOverlay80Ad(false)}
+                            className="w-6 h-6 rounded-full bg-white/20 hover:bg-red-600 text-white flex items-center justify-center text-xs font-black transition-colors cursor-pointer"
+                            title="বিজ্ঞাপন বন্ধ করুন"
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        <div className="rounded-xl overflow-hidden bg-white/5 flex items-center justify-center">
+                          <Hilltop300x250Banner 
+                            fallbackImageUrl={siteSettings.watch_page_banner_image_url}
+                            fallbackLinkUrl={siteSettings.watch_page_banner_link_url}
+                            className="scale-90 sm:scale-100 origin-center"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 

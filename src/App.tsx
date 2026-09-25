@@ -29,7 +29,7 @@ import {
   Search, X, Image as ImageIcon, Play, CheckCircle, 
   ThumbsUp, ThumbsDown, Share2, ArrowLeft, Eye, Clock,
   ExternalLink, SkipForward, Loader2, Shield, Smartphone,
-  Share, PlusSquare, CheckCircle2
+  Share, PlusSquare, CheckCircle2, ShieldAlert, RefreshCw, AlertTriangle
 } from 'lucide-react';
 import { supabase, SiteSettings as DbSiteSettings } from './supabase';
 
@@ -229,6 +229,114 @@ const PwaInstallModal: React.FC<PwaInstallModalProps> = ({
 };
 
 /**
+ * Ad Blocker Detection Modal Component (Unclosable High-Z Blocking Screen)
+ */
+interface AdBlockerModalProps {
+  isOpen: boolean;
+  onRefresh: () => void;
+  isChecking: boolean;
+}
+
+const AdBlockerModal: React.FC<AdBlockerModalProps> = ({
+  isOpen,
+  onRefresh,
+  isChecking
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div 
+      className="fixed inset-0 z-[9999999] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md animate-in fade-in duration-200 select-none overflow-y-auto"
+      style={{ touchAction: 'none' }}
+    >
+      <div 
+        className="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border-2 border-red-500/30 relative overflow-hidden animate-in zoom-in-95 duration-300 my-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Top Glowing Red Accent Gradient */}
+        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-red-600 via-rose-500 to-amber-500" />
+
+        {/* Warning Icon Badge */}
+        <div className="flex flex-col items-center text-center mb-6">
+          <div className="relative mb-3">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-red-100 flex items-center justify-center text-red-600 shadow-inner">
+              <ShieldAlert className="w-9 h-9 sm:w-11 sm:h-11" />
+            </div>
+            <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center font-bold text-xs shadow animate-pulse">
+              !
+            </div>
+          </div>
+
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            অ্যাড-ব্লকার শনাক্ত হয়েছে!
+          </h2>
+          <span className="text-xs uppercase font-extrabold tracking-wider text-red-600 mt-1">
+            Ad Blocker Detected
+          </span>
+
+          <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed max-w-md font-medium">
+            আমাদের প্ল্যাটফর্মের হাই-স্পিড ভিডিও সার্ভার এবং সম্পূর্ণ ফ্রিতে ভিডিও স্ট্রিমিং সচল রাখার একমাত্র মাধ্যম হলো বিজ্ঞাপন। ওয়েবসাইটটি দেখতে হলে অনুগ্রহ করে আপনার ব্রাউজারের <strong className="text-slate-900 font-bold">Ad Blocker</strong> বন্ধ করুন।
+          </p>
+        </div>
+
+        {/* Step-by-Step Instructions */}
+        <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-4 sm:p-5 mb-6 space-y-3 text-xs sm:text-sm text-slate-700">
+          <h3 className="font-black text-slate-900 text-xs tracking-wider uppercase mb-2 flex items-center gap-1.5">
+            <AlertTriangle className="w-4 h-4 text-amber-600" />
+            কীভাবে অ্যাড-ব্লকার বন্ধ করবেন?
+          </h3>
+
+          <div className="flex items-start gap-2.5">
+            <span className="w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center font-black text-[11px] shrink-0 mt-0.5">
+              ১
+            </span>
+            <p>
+              ব্রাউজারের উপরে থাকা <strong>AdBlock, uBlock Origin, AdGuard</strong> অথবা <strong>Brave Shields</strong> আইকনে চাপ দিন।
+            </p>
+          </div>
+
+          <div className="flex items-start gap-2.5">
+            <span className="w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center font-black text-[11px] shrink-0 mt-0.5">
+              ২
+            </span>
+            <p>
+              এই সাইটের জন্য <strong>"Pause"</strong>, <strong>"Turn OFF"</strong> অথবা <strong>"Disable on this site"</strong> নির্বাচন করুন।
+            </p>
+          </div>
+
+          <div className="flex items-start gap-2.5">
+            <span className="w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center font-black text-[11px] shrink-0 mt-0.5">
+              ৩
+            </span>
+            <p>
+              অ্যাড ব্লকার বন্ধ করার পর নিচের <strong>"রিফ্রেশ করুন"</strong> বাটনে ক্লিক করলেই সাইটটি স্বয়ংক্রিয়ভাবে চালু হয়ে যাবে।
+            </p>
+          </div>
+        </div>
+
+        {/* Action Button */}
+        <div className="space-y-3">
+          <button
+            onClick={onRefresh}
+            disabled={isChecking}
+            className="w-full py-3.5 sm:py-4 px-6 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-red-600 hover:from-red-700 hover:to-rose-700 text-white font-black text-sm sm:text-base tracking-wide shadow-xl shadow-red-500/30 hover:shadow-red-500/40 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-75"
+          >
+            <RefreshCw className={`w-5 h-5 ${isChecking ? 'animate-spin' : ''}`} />
+            <span>
+              {isChecking ? 'যাচাই করা হচ্ছে...' : 'অ্যাড ব্লকার বন্ধ করেছি - রিফ্রেশ করুন'}
+            </span>
+          </button>
+
+          <p className="text-center text-[11px] text-slate-500 font-medium">
+            🔒 আমরা কোনো ম্যালিসিয়াস বা ক্ষতিকর পপ-আপ বিজ্ঞাপন প্রচার করি না।
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/**
  * Generates an SEO & human-friendly URL slug from any English or Bengali video title
  */
 export function generateVideoSlug(title: string): string {
@@ -256,6 +364,11 @@ export function getVideoFullShareUrl(video: VideoItem): string {
 }
 
 /**
+ * Official Default VAST 3.0 Video Ad Tag URL
+ */
+export const DEFAULT_VAST_TAG = 'https://probable-alternative.com/dum/FOz/d.GXNtv/ZwGfUr/We/mw9/uhZeUjldklP-TKcP0xNkTZgv0DOOT_M/tcNBzvQP1BO/DmQZ5eNnwH';
+
+/**
  * Parses VAST XML to extract ad video MediaFile, ClickThrough URL, and fire Impression beacons.
  */
 async function parseVastXml(xmlUrl: string, depth = 0): Promise<{ mediaUrl: string; clickThrough: string } | null> {
@@ -264,8 +377,35 @@ async function parseVastXml(xmlUrl: string, depth = 0): Promise<{ mediaUrl: stri
   if (safeUrl === '#') return null;
 
   try {
-    const res = await fetch(safeUrl);
-    const xmlText = await res.text();
+    let xmlText = '';
+    
+    // 1. Attempt direct fetch (Standard high-speed CORS fetch)
+    try {
+      const res = await fetch(safeUrl, { cache: 'no-store' });
+      if (res.ok) {
+        xmlText = await res.text();
+      }
+    } catch (directErr) {
+      console.warn('Direct VAST fetch warning, trying proxy fallback:', directErr);
+    }
+
+    // 2. Fallback proxy if direct fetch is blocked or empty
+    if (!xmlText || !xmlText.includes('<VAST')) {
+      try {
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(safeUrl)}`;
+        const pRes = await fetch(proxyUrl);
+        if (pRes.ok) {
+          xmlText = await pRes.text();
+        }
+      } catch (proxyErr) {
+        console.warn('Proxy VAST fetch warning:', proxyErr);
+      }
+    }
+
+    if (!xmlText || !xmlText.includes('<VAST')) {
+      return null;
+    }
+
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
 
@@ -280,9 +420,9 @@ async function parseVastXml(xmlUrl: string, depth = 0): Promise<{ mediaUrl: stri
     let chosenMedia = '';
     for (let i = 0; i < mediaFiles.length; i++) {
       const mf = mediaFiles[i];
-      const type = mf.getAttribute('type') || '';
+      const type = (mf.getAttribute('type') || '').toLowerCase();
       const src = mf.textContent?.trim() || '';
-      if (src) {
+      if (src && (src.startsWith('http://') || src.startsWith('https://'))) {
         chosenMedia = src;
         if (type.includes('mp4')) break;
       }
@@ -500,14 +640,18 @@ export default function App() {
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // 🛡️ High-Speed Multi-Vector Ad Blocker Detection State
+  const [isAdBlockerActive, setIsAdBlockerActive] = useState<boolean>(false);
+  const [isCheckingAdBlock, setIsCheckingAdBlock] = useState<boolean>(false);
   
   // Supabase dynamic state
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [isLoadingVideos, setIsLoadingVideos] = useState<boolean>(true);
   const [siteSettings, setSiteSettings] = useState<DbSiteSettings>({
     id: 'global_config',
-    vast_tag_url: 'https://probable-alternative.com/dqm.Ffz/dzG/NhvlZBGZUD/Deamg9fuSZSUxlfkcPuTtcq0/N/T/g-0SO/ToMRtmNhzAQm1/OcDCQi5aNYwc',
-    vast_skip_seconds: 6,
+    vast_tag_url: DEFAULT_VAST_TAG,
+    vast_skip_seconds: 10,
     banner_top_image_url: '',
     banner_top_link_url: '#',
     in_feed_banner_image_url: '',
@@ -561,7 +705,9 @@ export default function App() {
 
   // 🎬 VAST Video Ad Pre-roll Engine State
   const [isAdPlaying, setIsAdPlaying] = useState<boolean>(false);
-  const [adCountdown, setAdCountdown] = useState<number>(siteSettings.vast_skip_seconds || 6);
+  const [isAdLoading, setIsAdLoading] = useState<boolean>(false);
+  const [isAdMuted, setIsAdMuted] = useState<boolean>(false);
+  const [adCountdown, setAdCountdown] = useState<number>(siteSettings.vast_skip_seconds || 10);
   const [adMediaUrl, setAdMediaUrl] = useState<string>('');
   const [adClickThrough, setAdClickThrough] = useState<string>('');
   const [adProgressPercent, setAdProgressPercent] = useState<number>(0);
@@ -580,6 +726,165 @@ export default function App() {
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const videoPlayerRef = useRef<HTMLVideoElement>(null);
+
+  // ========================================================
+  // 🛡️ ULTRA-FAST (<1s) MULTI-VECTOR AD BLOCKER DETECTOR
+  // ========================================================
+  const checkAdBlocker = useCallback(async (): Promise<boolean> => {
+    let isBlocked = false;
+
+    // Vector 1: DOM Cosmetic Filter Honeypot Test (uBlock, AdBlock Plus, AdGuard, Brave, etc.)
+    try {
+      const bait = document.createElement('div');
+      bait.className = 'ad-unit adsbox ad-placement pub_300x250 pub_300x250m pub_728x90 text-ad textAd text_ad text-ads banner-ad ad-banner';
+      bait.setAttribute('aria-hidden', 'true');
+      bait.style.cssText = 'position: absolute !important; left: -9999px !important; top: -9999px !important; width: 100px !important; height: 100px !important; pointer-events: none !important; opacity: 0 !important;';
+      bait.innerHTML = '&nbsp;';
+      document.body.appendChild(bait);
+
+      const computed = window.getComputedStyle(bait);
+      if (
+        computed.display === 'none' ||
+        computed.visibility === 'hidden' ||
+        bait.offsetParent === null ||
+        bait.offsetHeight === 0 ||
+        bait.clientHeight === 0
+      ) {
+        isBlocked = true;
+      }
+      if (bait.parentNode) {
+        bait.parentNode.removeChild(bait);
+      }
+    } catch (e) {
+      // Ignore DOM query exception
+    }
+
+    if (isBlocked) return true;
+
+    // Vector 2: Bait Script Test (/ads.js)
+    if ((window as any).canRunAds !== true) {
+      try {
+        await new Promise<void>((resolve) => {
+          const script = document.createElement('script');
+          script.src = `/ads.js?t=${Date.now()}`;
+          script.async = true;
+          script.onload = () => resolve();
+          script.onerror = () => {
+            isBlocked = true;
+            resolve();
+          };
+          document.head.appendChild(script);
+        });
+      } catch (e) {
+        isBlocked = true;
+      }
+    }
+
+    if (isBlocked) return true;
+
+    // Vector 3: Network Honeypot Fetch Test (Ad URL network blockers)
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 900);
+      await fetch('https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js', {
+        method: 'HEAD',
+        mode: 'no-cors',
+        cache: 'no-store',
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        isBlocked = true;
+      }
+    }
+
+    // Vector 4: Brave Shields Specific Detection
+    if (!isBlocked && (navigator as any).brave) {
+      try {
+        const isBrave = await (navigator as any).brave.isBrave();
+        if (isBrave) {
+          isBlocked = isBlocked || ((window as any).canRunAds !== true);
+        }
+      } catch (e) {}
+    }
+
+    return isBlocked;
+  }, []);
+
+  // Track if the user was blocked by AdBlocker in this session
+  const wasBlockedRef = useRef<boolean>(false);
+
+  // Run AdBlock check immediately (<500ms) and continuously
+  useEffect(() => {
+    let isMounted = true;
+
+    const runDetection = async () => {
+      const blocked = await checkAdBlocker();
+      if (!isMounted) return;
+
+      if (blocked) {
+        wasBlockedRef.current = true;
+        setIsAdBlockerActive(true);
+      } else {
+        // 🔄 Auto-Reload: If ad blocker was previously active and user now turned it off:
+        // Automatically reload the page so ads, scripts and video players load freshly!
+        if (wasBlockedRef.current) {
+          window.location.reload();
+          return;
+        }
+        setIsAdBlockerActive(false);
+      }
+    };
+
+    // Instant fast check (300ms)
+    const timer1 = setTimeout(runDetection, 300);
+    // Secondary confirmation check (1000ms)
+    const timer2 = setTimeout(runDetection, 1000);
+    // Periodic watchdog check every 4 seconds
+    const interval = setInterval(runDetection, 4000);
+
+    // Check when user returns to the tab or browser window gains focus
+    const handleFocus = () => runDetection();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        runDetection();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [checkAdBlocker]);
+
+  // Lock website scrolling completely when AdBlocker modal is active
+  useEffect(() => {
+    if (isAdBlockerActive) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, [isAdBlockerActive]);
+
+  const handleAdBlockerRefresh = () => {
+    setIsCheckingAdBlock(true);
+    // Unconditionally reload page immediately so all scripts and ads refresh
+    window.location.reload();
+  };
 
   // ========================================================
   // 🧭 ROUTE PARSER & HISTORY SYNC ENGINE (YouTube/FB Style)
@@ -728,7 +1033,8 @@ export default function App() {
           twitter_url: resolveSocialUrl(data.twitter_url, OFFICIAL_SOCIAL_LINKS.twitter),
           instagram_url: resolveSocialUrl(data.instagram_url, OFFICIAL_SOCIAL_LINKS.instagram),
           tiktok_url: resolveSocialUrl(data.tiktok_url, OFFICIAL_SOCIAL_LINKS.tiktok),
-          vast_tag_url: data.vast_tag_url || prev.vast_tag_url,
+          vast_tag_url: (data.vast_tag_url && data.vast_tag_url !== '#' && !data.vast_tag_url.includes('dqm.Ffz')) ? data.vast_tag_url : DEFAULT_VAST_TAG,
+          vast_skip_seconds: Math.max(Number(data.vast_skip_seconds) || 10, 10),
         }));
       }
     } catch (err) {
@@ -772,16 +1078,22 @@ export default function App() {
 
     if (!activeVideo) {
       setIsAdPlaying(false);
+      setIsAdLoading(false);
       setAdMediaUrl('');
       setAdClickThrough('');
       return;
     }
 
     // Check if VAST_TAG_URL is configured in siteSettings
-    const vastUrl = siteSettings.vast_tag_url?.trim();
+    const vastUrl = (siteSettings.vast_tag_url?.trim() && !siteSettings.vast_tag_url.includes('dqm.Ffz')) 
+      ? siteSettings.vast_tag_url.trim() 
+      : DEFAULT_VAST_TAG;
+
     if (vastUrl) {
-      const skipSecs = siteSettings.vast_skip_seconds || 6;
+      const skipSecs = Math.max(Number(siteSettings.vast_skip_seconds) || 10, 10);
       setIsAdPlaying(true);
+      setIsAdLoading(true);
+      setAdMediaUrl('');
       setAdCountdown(skipSecs);
       setAdProgressPercent(0);
 
@@ -789,13 +1101,19 @@ export default function App() {
         if (vastResult?.mediaUrl) {
           setAdMediaUrl(vastResult.mediaUrl);
           setAdClickThrough(vastResult.clickThrough || '');
+          setIsAdLoading(false);
         } else {
           // Fallback if VAST fails or has no media: play video directly
           setIsAdPlaying(false);
+          setIsAdLoading(false);
         }
+      }).catch(() => {
+        setIsAdPlaying(false);
+        setIsAdLoading(false);
       });
     } else {
       setIsAdPlaying(false);
+      setIsAdLoading(false);
     }
   }, [activeVideo?.id, siteSettings.vast_tag_url, siteSettings.vast_skip_seconds]);
 
@@ -817,6 +1135,7 @@ export default function App() {
 
   const handleSkipAd = () => {
     setIsAdPlaying(false);
+    setIsAdLoading(false);
     setAdMediaUrl('');
     // Automatically resume main video from 80% timestamp if it was a mid-roll ad
     setTimeout(() => {
@@ -845,10 +1164,15 @@ export default function App() {
         setHasShown80PercentAd(true);
         savedPlaybackTimeRef.current = vid.currentTime;
 
-        const vastUrl = siteSettings.vast_tag_url?.trim();
+        const vastUrl = (siteSettings.vast_tag_url?.trim() && !siteSettings.vast_tag_url.includes('dqm.Ffz')) 
+          ? siteSettings.vast_tag_url.trim() 
+          : DEFAULT_VAST_TAG;
+
         if (vastUrl) {
-          const skipSecs = siteSettings.vast_skip_seconds || 6;
+          const skipSecs = Math.max(Number(siteSettings.vast_skip_seconds) || 10, 10);
           setIsAdPlaying(true);
+          setIsAdLoading(true);
+          setAdMediaUrl('');
           setAdCountdown(skipSecs);
           setAdProgressPercent(0);
 
@@ -856,9 +1180,14 @@ export default function App() {
             if (vastResult?.mediaUrl) {
               setAdMediaUrl(vastResult.mediaUrl);
               setAdClickThrough(vastResult.clickThrough || '');
+              setIsAdLoading(false);
             } else {
               setIsAdPlaying(false);
+              setIsAdLoading(false);
             }
+          }).catch(() => {
+            setIsAdPlaying(false);
+            setIsAdLoading(false);
           });
         }
       }
@@ -1371,15 +1700,41 @@ export default function App() {
               <div className="relative aspect-video w-full bg-black rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-slate-200">
                 {isAdPlaying ? (
                   <div className="relative w-full h-full bg-black flex items-center justify-center">
-                    <video 
-                      key={`ad-${activeVideo.id}`}
-                      src={adMediaUrl || activeVideo.videoSrc}
-                      autoPlay
-                      playsInline
-                      onTimeUpdate={handleAdTimeUpdate}
-                      onEnded={handleSkipAd}
-                      className="w-full h-full object-contain pointer-events-none select-none"
-                    />
+                    {/* ⏳ VAST Loading State */}
+                    {isAdLoading || !adMediaUrl ? (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/95 text-white z-10">
+                        <Loader2 className="w-10 h-10 animate-spin text-amber-400 mb-3" />
+                        <span className="text-xs font-bold text-slate-300">বিজ্ঞাপন লোড হচ্ছে...</span>
+                      </div>
+                    ) : (
+                      <video 
+                        key={`ad-${adMediaUrl}`}
+                        src={adMediaUrl}
+                        autoPlay
+                        playsInline
+                        preload="auto"
+                        muted={isAdMuted}
+                        onLoadedMetadata={(e) => {
+                          const vid = e.currentTarget;
+                          const p = vid.play();
+                          if (p !== undefined) {
+                            p.catch(() => {
+                              // Autoplay unmuted blocked by browser, mute and play
+                              vid.muted = true;
+                              setIsAdMuted(true);
+                              vid.play().catch(() => {});
+                            });
+                          }
+                        }}
+                        onTimeUpdate={handleAdTimeUpdate}
+                        onEnded={handleSkipAd}
+                        onError={() => {
+                          console.warn('Ad video playback error, skipping to main video');
+                          handleSkipAd();
+                        }}
+                        className="w-full h-full object-contain pointer-events-none select-none"
+                      />
+                    )}
 
                     {/* YouTube-style Ad Top Badge & Advertiser Link */}
                     <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-auto z-20">
@@ -1389,20 +1744,31 @@ export default function App() {
                         </span>
                         <span>1 of 1</span>
                         <span className="text-white/40">•</span>
-                        <span className="text-white/80">0:0{adCountdown}</span>
+                        <span className="text-white/80">0:{adCountdown < 10 ? `0${adCountdown}` : adCountdown}</span>
                       </div>
 
-                      {adClickThrough && adClickThrough !== '#' && (
-                        <a
-                          href={adClickThrough}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 bg-white/95 hover:bg-white text-slate-900 px-3 py-1 rounded-full text-xs font-bold shadow-lg transition-all hover:scale-105"
-                        >
-                          <span>Visit Advertiser</span>
-                          <ExternalLink className="w-3 h-3 text-slate-600" />
-                        </a>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {isAdMuted && (
+                          <button
+                            onClick={() => setIsAdMuted(false)}
+                            className="flex items-center gap-1.5 bg-black/85 hover:bg-black text-amber-400 px-3 py-1 rounded-full text-xs font-bold border border-amber-400/50 shadow-lg transition-transform hover:scale-105 cursor-pointer"
+                          >
+                            <span>🔊 Unmute</span>
+                          </button>
+                        )}
+
+                        {adClickThrough && adClickThrough !== '#' && (
+                          <a
+                            href={adClickThrough}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 bg-white/95 hover:bg-white text-slate-900 px-3 py-1 rounded-full text-xs font-bold shadow-lg transition-all hover:scale-105"
+                          >
+                            <span>Visit Advertiser</span>
+                            <ExternalLink className="w-3 h-3 text-slate-600" />
+                          </a>
+                        )}
+                      </div>
                     </div>
 
                     {/* YouTube-style Yellow Ad Progress Bar */}
@@ -1440,6 +1806,7 @@ export default function App() {
                       controls
                       autoPlay
                       playsInline
+                      preload="auto"
                       onLoadedMetadata={(e) => {
                         if (savedPlaybackTimeRef.current > 0) {
                           e.currentTarget.currentTime = savedPlaybackTimeRef.current;
@@ -1633,6 +2000,8 @@ export default function App() {
                       <img 
                         src={video.thumbnail} 
                         alt={video.title} 
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
@@ -1686,6 +2055,9 @@ export default function App() {
                         <img 
                           src={video.thumbnail} 
                           alt={video.title} 
+                          loading={index < 4 ? "eager" : "lazy"}
+                          decoding="async"
+                          fetchPriority={index < 2 ? "high" : "auto"}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                         <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors flex items-center justify-center">
@@ -2038,6 +2410,13 @@ export default function App() {
         onInstall={handleTriggerInstall}
         isIos={isIos}
         isStandalone={isStandalone}
+      />
+
+      {/* 🛡️ Strict Ad Blocker Blocking Overlay (Unclosable, Full Lockout) */}
+      <AdBlockerModal
+        isOpen={isAdBlockerActive}
+        onRefresh={handleAdBlockerRefresh}
+        isChecking={isCheckingAdBlock}
       />
 
     </div>

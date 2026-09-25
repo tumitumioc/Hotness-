@@ -37,6 +37,8 @@ export interface SiteSettings {
   facebook_url: string;
   telegram_url: string;
   youtube_url: string;
+  twitter_url?: string;
   instagram_url: string;
+  app_download_url?: string;
   updated_at?: string;
 }

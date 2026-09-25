@@ -28,9 +28,10 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { 
   Search, X, Image as ImageIcon, Play, CheckCircle, 
   ThumbsUp, ThumbsDown, Share2, ArrowLeft, Eye, Clock,
-  ExternalLink, SkipForward, Loader2, Shield
+  ExternalLink, SkipForward, Loader2, Shield, Smartphone
 } from 'lucide-react';
 import { supabase, SiteSettings as DbSiteSettings } from './supabase';
+import { PwaInstallModal } from './components/PwaInstallModal';
 
 /**
  * URL sanitizer to ensure only safe http/https links are rendered in hrefs and srcs
@@ -198,27 +199,12 @@ const BrandLogo: React.FC<{
 };
 
 /**
- * HilltopAds Live Header Banner (Zone #7458493)
+ * HilltopAds Live Header Banner (Zone #7458493) - Isolated in Sandboxed Iframe
  */
 const HilltopHeaderBanner: React.FC<{
   fallbackImageUrl?: string;
   fallbackLinkUrl?: string;
 }> = ({ fallbackImageUrl, fallbackLinkUrl }) => {
-  const adContainerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (fallbackImageUrl) return;
-    if (!adContainerRef.current) return;
-
-    adContainerRef.current.innerHTML = '';
-    const script = document.createElement('script');
-    script.src = '//dismalscrew.com/bdXtV.sjdsG/ln0IYnWGcU/xe/mQ9Yu/ZSUvl/kePDTCcx0TNaT/gx1_MJDSElteN/zgQ_1jOUDoUBwlNWQQ';
-    script.async = true;
-    script.referrerPolicy = 'no-referrer-when-downgrade';
-
-    adContainerRef.current.appendChild(script);
-  }, [fallbackImageUrl]);
-
   if (fallbackImageUrl) {
     return (
       <div className="w-full flex justify-center mb-4">
@@ -240,39 +226,43 @@ const HilltopHeaderBanner: React.FC<{
     );
   }
 
+  const iframeHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="referrer" content="no-referrer-when-downgrade">
+        <style>
+          * { box-sizing: border-box; }
+          body { margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; background: transparent; overflow: hidden; width: 100%; height: 100%; }
+        </style>
+      </head>
+      <body>
+        <script async src="//dismalscrew.com/bdXtV.sjdsG/ln0IYnWGcU/xe/mQ9Yu/ZSUvl/kePDTCcx0TNaT/gx1_MJDSElteN/zgQ_1jOUDoUBwlNWQQ"></script>
+      </body>
+    </html>
+  `;
+
   return (
     <div className="w-full flex justify-center mb-4">
-      <div 
-        ref={adContainerRef} 
-        className="w-full max-w-[320px] sm:max-w-[468px] md:max-w-[728px] min-h-[50px] sm:min-h-[60px] flex items-center justify-center overflow-hidden"
+      <iframe 
+        srcDoc={iframeHtml}
+        title="Sponsored Top Banner"
+        className="w-full max-w-[728px] h-[60px] sm:h-[90px] border-0 overflow-hidden bg-transparent"
+        scrolling="no"
       />
     </div>
   );
 };
 
 /**
- * HilltopAds Live 300x250 Banner (In-Feed & Watch Page)
+ * HilltopAds Live 300x250 Banner (In-Feed & Watch Page) - Isolated in Sandboxed Iframe
  */
 const Hilltop300x250Banner: React.FC<{
   fallbackImageUrl?: string;
   fallbackLinkUrl?: string;
   className?: string;
 }> = ({ fallbackImageUrl, fallbackLinkUrl, className = '' }) => {
-  const adRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (fallbackImageUrl) return;
-    if (!adRef.current) return;
-
-    adRef.current.innerHTML = '';
-    const script = document.createElement('script');
-    script.src = '//dismalscrew.com/baX.VSsbdFG/lP0/Y/W/ca/ge/mI9/uLZxULlEk/PJThcg0vN/Tsg/1UMXj-kuteNBzkQL1hO/D/U/zqMJwe';
-    script.async = true;
-    script.referrerPolicy = 'no-referrer-when-downgrade';
-
-    adRef.current.appendChild(script);
-  }, [fallbackImageUrl]);
-
   if (fallbackImageUrl) {
     return (
       <div className={`w-full flex justify-center ${className}`}>
@@ -292,9 +282,31 @@ const Hilltop300x250Banner: React.FC<{
     );
   }
 
+  const iframeHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="referrer" content="no-referrer-when-downgrade">
+        <style>
+          * { box-sizing: border-box; }
+          body { margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; background: transparent; overflow: hidden; width: 300px; height: 250px; }
+        </style>
+      </head>
+      <body>
+        <script async src="//dismalscrew.com/baX.VSsbdFG/lP0/Y/W/ca/ge/mI9/uLZxULlEk/PJThcg0vN/Tsg/1UMXj-kuteNBzkQL1hO/D/U/zqMJwe"></script>
+      </body>
+    </html>
+  `;
+
   return (
     <div className={`w-full flex justify-center items-center overflow-hidden min-h-[250px] ${className}`}>
-      <div ref={adRef} className="w-[300px] min-h-[250px] flex items-center justify-center" />
+      <iframe 
+        srcDoc={iframeHtml}
+        title="Sponsored 300x250 Banner"
+        className="w-[300px] h-[250px] border-0 overflow-hidden bg-transparent"
+        scrolling="no"
+      />
     </div>
   );
 };
@@ -374,6 +386,13 @@ export default function App() {
   const [hasShown80PercentAd, setHasShown80PercentAd] = useState<boolean>(false);
   const [showOverlay80Ad, setShowOverlay80Ad] = useState<boolean>(false);
   const savedPlaybackTimeRef = useRef<number>(0);
+
+  // 📲 PWA Web App Install Prompt State (Android & iOS Shortcut)
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState<boolean>(false);
+  const [isIos, setIsIos] = useState<boolean>(false);
+  const [isStandalone, setIsStandalone] = useState<boolean>(false);
+  const [showFloatingInstallBanner, setShowFloatingInstallBanner] = useState<boolean>(false);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const videoPlayerRef = useRef<HTMLVideoElement>(null);
@@ -733,6 +752,63 @@ export default function App() {
     };
   }, [activeVideo]);
 
+  // 📲 PWA (Progressive Web App) Install Listener & Device Detection
+  useEffect(() => {
+    // Check if running in standalone mode (already installed as PWA)
+    const isRunningStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+      (window.navigator as any).standalone === true ||
+      document.referrer.includes('android-app://');
+    setIsStandalone(isRunningStandalone);
+
+    // Detect iOS
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const isIosDevice = /iphone|ipad|ipod/.test(userAgent) && !(window as any).MSStream;
+    setIsIos(isIosDevice);
+
+    // Capture standard browser beforeinstallprompt (Android / Chrome / Edge)
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      const dismissed = sessionStorage.getItem('hotness_pwa_banner_dismissed');
+      if (!dismissed && !isRunningStandalone) {
+        setTimeout(() => setShowFloatingInstallBanner(true), 3000);
+      }
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // If iOS and not standalone, show floating install prompt after brief delay
+    if (isIosDevice && !isRunningStandalone) {
+      const dismissed = sessionStorage.getItem('hotness_pwa_banner_dismissed');
+      if (!dismissed) {
+        setTimeout(() => setShowFloatingInstallBanner(true), 3000);
+      }
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleTriggerInstall = async () => {
+    if (deferredPrompt) {
+      // Trigger native Android / Chromium install dialog (as in screenshot)
+      deferredPrompt.prompt();
+      try {
+        const choiceResult = await deferredPrompt.userChoice;
+        if (choiceResult?.outcome === 'accepted') {
+          setIsStandalone(true);
+          setShowFloatingInstallBanner(false);
+        }
+      } catch (err) {}
+      setDeferredPrompt(null);
+      setIsInstallModalOpen(false);
+    } else {
+      // Open interactive visual guide (especially for iOS Safari)
+      setIsInstallModalOpen(true);
+    }
+  };
+
   useEffect(() => {
     if (isSearchOpen && searchInputRef.current) {
       searchInputRef.current.focus();
@@ -987,8 +1063,22 @@ export default function App() {
             })}
           </nav>
 
-          {/* Light Theme Search Icon Trigger */}
-          <div className="flex items-center gap-3">
+          {/* Light Theme Search & PWA Web App Install Action */}
+          <div className="flex items-center gap-2.5">
+            
+            {/* 📱 PWA Install Header Button (Android & iOS) */}
+            {!isStandalone && (
+              <button
+                onClick={handleTriggerInstall}
+                title="Install App (Android & iOS)"
+                className="group relative flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white text-xs font-black shadow-sm shadow-red-500/25 hover:scale-105 transition-all duration-150 cursor-pointer select-none"
+              >
+                <Smartphone className="w-3.5 h-3.5 text-white/90 group-hover:scale-110 transition-transform" />
+                <span className="hidden sm:inline font-extrabold tracking-wider">INSTALL APP</span>
+                <span className="sm:hidden font-extrabold">APP</span>
+              </button>
+            )}
+
             <button
               onClick={() => setIsSearchOpen(true)}
               aria-label="Search"
@@ -1098,12 +1188,7 @@ export default function App() {
                       playsInline
                       onTimeUpdate={handleAdTimeUpdate}
                       onEnded={handleSkipAd}
-                      className="w-full h-full object-contain cursor-pointer"
-                      onClick={() => {
-                        if (adClickThrough && adClickThrough !== '#') {
-                          window.open(adClickThrough, '_blank', 'noopener,noreferrer');
-                        }
-                      }}
+                      className="w-full h-full object-contain pointer-events-none select-none"
                     />
 
                     {/* YouTube-style Ad Top Badge & Advertiser Link */}
@@ -1664,6 +1749,27 @@ export default function App() {
                   </svg>
                 </a>
               </div>
+
+              {/* 📱 Official Web App (PWA) Install CTA Banner (Android & iOS) */}
+              {!isStandalone && (
+                <div className="mt-4 pt-3 border-t border-slate-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div>
+                    <span className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                      <Smartphone className="w-3.5 h-3.5 text-red-600" />
+                      Hotness Web App (PWA)
+                    </span>
+                    <p className="text-[11px] text-slate-500">Android ও iPhone-এ সরাসরি হোম স্ক্রিনে অ্যাপ আকারে যুক্ত করুন</p>
+                  </div>
+
+                  <button
+                    onClick={handleTriggerInstall}
+                    className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-red-600 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-sm hover:shadow-md cursor-pointer shrink-0"
+                  >
+                    <Smartphone className="w-3.5 h-3.5" />
+                    <span>Install App</span>
+                  </button>
+                </div>
+              )}
             </div>
 
           </div>
@@ -1683,6 +1789,48 @@ export default function App() {
 
         </div>
       </footer>
+
+      {/* 📲 Floating PWA Install Bottom Pill (Mobile & Desktop) */}
+      {showFloatingInstallBanner && !isStandalone && (
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-40 bg-white/95 backdrop-blur-md border-2 border-red-500/40 rounded-2xl p-3.5 shadow-[0_10px_35px_rgba(0,0,0,0.15)] flex items-center justify-between gap-3 animate-in slide-in-from-bottom-5 duration-300">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-rose-600 p-0.5 shadow-md shadow-red-500/20 shrink-0">
+              <img src="/logo.fevicon.png" alt="Logo" className="w-full h-full object-cover rounded-[10px]" onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }} />
+            </div>
+            <div>
+              <h4 className="text-xs font-black text-slate-900 leading-tight">Install Hotness App</h4>
+              <p className="text-[11px] text-slate-500">ফোনের হোম স্ক্রিনে শর্টকাট অ্যাপ যোগ করুন</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={() => {
+                setShowFloatingInstallBanner(false);
+                sessionStorage.setItem('hotness_pwa_banner_dismissed', 'true');
+              }}
+              className="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center text-xs font-bold transition-colors cursor-pointer"
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+            <button
+              onClick={handleTriggerInstall}
+              className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white text-xs font-black shadow-md shadow-red-500/20 cursor-pointer"
+            >
+              Install
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 📱 PWA Native / iOS Step-by-Step Install Dialog */}
+      <PwaInstallModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
+        onInstall={handleTriggerInstall}
+        isIos={isIos}
+        isStandalone={isStandalone}
+      />
 
     </div>
     </>

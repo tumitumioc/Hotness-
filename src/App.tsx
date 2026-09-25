@@ -197,6 +197,59 @@ const BrandLogo: React.FC<{
   );
 };
 
+/**
+ * HilltopAds Live Header Banner (Zone #7458493)
+ */
+const HilltopHeaderBanner: React.FC<{
+  fallbackImageUrl?: string;
+  fallbackLinkUrl?: string;
+}> = ({ fallbackImageUrl, fallbackLinkUrl }) => {
+  const adContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (fallbackImageUrl) return;
+    if (!adContainerRef.current) return;
+
+    adContainerRef.current.innerHTML = '';
+    const script = document.createElement('script');
+    script.src = '//dismalscrew.com/bdXtV.sjdsG/ln0IYnWGcU/xe/mQ9Yu/ZSUvl/kePDTCcx0TNaT/gx1_MJDSElteN/zgQ_1jOUDoUBwlNWQQ';
+    script.async = true;
+    script.referrerPolicy = 'no-referrer-when-downgrade';
+
+    adContainerRef.current.appendChild(script);
+  }, [fallbackImageUrl]);
+
+  if (fallbackImageUrl) {
+    return (
+      <div className="w-full flex justify-center mb-4">
+        <div className="w-[320px] h-[50px] sm:w-[468px] sm:h-[60px] md:w-[728px] md:h-[90px] max-w-full bg-slate-50 border border-slate-200 rounded-lg overflow-hidden flex items-center justify-center relative shadow-xs">
+          <a 
+            href={sanitizeUrl(fallbackLinkUrl)} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="w-full h-full block"
+          >
+            <img 
+              src={fallbackImageUrl} 
+              alt="Banner" 
+              className="w-full h-full object-cover"
+            />
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full flex justify-center mb-4">
+      <div 
+        ref={adContainerRef} 
+        className="w-full max-w-[320px] sm:max-w-[468px] md:max-w-[728px] min-h-[50px] sm:min-h-[60px] flex items-center justify-center overflow-hidden"
+      />
+    </div>
+  );
+};
+
 export default function App() {
   // Navigation / Route state
   const [activeCategory, setActiveCategory] = useState<string>('home');
@@ -858,33 +911,13 @@ export default function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-5 flex flex-col items-center">
 
         {/* ======================================================== */}
-        {/* 📢 BANNER AD SECTION (320x50) - ONLY ON FEED (NOT PLAYER) */}
+        {/* 📢 HILLTOPADS LIVE HEADER BANNER (OR ADMIN CUSTOM BANNER)*/}
         {/* ======================================================== */}
         {!activeVideo && (
-          <div className="w-full flex justify-center mb-4">
-            <div className="w-[320px] h-[50px] max-w-full bg-slate-50/80 border border-slate-200/90 rounded-lg overflow-hidden flex items-center justify-center relative transition-all">
-              {siteSettings.banner_top_image_url ? (
-                <a 
-                  href={sanitizeUrl(siteSettings.banner_top_link_url)} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="w-full h-full block"
-                >
-                  <img 
-                    src={siteSettings.banner_top_image_url} 
-                    alt="Banner" 
-                    className="w-full h-full object-cover"
-                  />
-                </a>
-              ) : (
-                <div className="w-full h-full flex items-center justify-center gap-1.5 px-2 text-slate-300 select-none">
-                  <span className="text-[11px] font-medium tracking-wider text-slate-300">
-                    320 × 50
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
+          <HilltopHeaderBanner 
+            fallbackImageUrl={siteSettings.banner_top_image_url}
+            fallbackLinkUrl={siteSettings.banner_top_link_url}
+          />
         )}
 
         {/* Content wrapper */}

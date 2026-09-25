@@ -74,8 +74,8 @@ export function getVideoFullShareUrl(video: VideoItem): string {
 /**
  * Parses VAST XML to extract ad video MediaFile, ClickThrough URL, and fire Impression beacons.
  */
-async function parseVastXml(xmlUrl: string): Promise<{ mediaUrl: string; clickThrough: string } | null> {
-  if (!xmlUrl || !xmlUrl.trim()) return null;
+async function parseVastXml(xmlUrl: string, depth = 0): Promise<{ mediaUrl: string; clickThrough: string } | null> {
+  if (!xmlUrl || !xmlUrl.trim() || depth > 3) return null;
   const safeUrl = sanitizeUrl(xmlUrl);
   if (safeUrl === '#') return null;
 
@@ -84,6 +84,12 @@ async function parseVastXml(xmlUrl: string): Promise<{ mediaUrl: string; clickTh
     const xmlText = await res.text();
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+
+    // Follow Wrapper tags if present
+    const wrapperTag = xmlDoc.querySelector('VASTAdTagURI');
+    if (wrapperTag?.textContent?.trim()) {
+      return parseVastXml(wrapperTag.textContent.trim(), depth + 1);
+    }
 
     // 1. Find MediaFile (prefer MP4)
     const mediaFiles = xmlDoc.querySelectorAll('MediaFile');
@@ -99,7 +105,7 @@ async function parseVastXml(xmlUrl: string): Promise<{ mediaUrl: string; clickTh
     }
 
     // 2. Find ClickThrough URL
-    const clickThroughEl = xmlDoc.querySelector('ClickThrough');
+    const clickThroughEl = xmlDoc.querySelector('ClickThrough') || xmlDoc.querySelector('ClickTracking');
     const clickThrough = clickThroughEl?.textContent?.trim() || '';
 
     // 3. Trigger Impression tracking pixels silently
@@ -203,7 +209,7 @@ export default function App() {
   const [isLoadingVideos, setIsLoadingVideos] = useState<boolean>(true);
   const [siteSettings, setSiteSettings] = useState<DbSiteSettings>({
     id: 'global_config',
-    vast_tag_url: '',
+    vast_tag_url: 'https://probable-alternative.com/dqm.Ffz/dzG/NhvlZBGZUD/Deamg9fuSZSUxlfkcPuTtcq0/N/T/g-0SO/ToMRtmNhzAQm1/OcDCQi5aNYwc',
     vast_skip_seconds: 6,
     banner_top_image_url: '',
     banner_top_link_url: '#',
@@ -403,7 +409,11 @@ export default function App() {
         .single();
 
       if (data && !error) {
-        setSiteSettings(data);
+        setSiteSettings(prev => ({
+          ...prev,
+          ...data,
+          vast_tag_url: data.vast_tag_url || prev.vast_tag_url,
+        }));
       }
     } catch (err) {
       console.warn('Error loading settings from Supabase:', err);

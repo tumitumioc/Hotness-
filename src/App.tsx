@@ -28,7 +28,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { 
   Search, X, Image as ImageIcon, Play, CheckCircle, 
   ThumbsUp, ThumbsDown, Share2, ArrowLeft, Eye, Clock,
-  ExternalLink, SkipForward, Loader2
+  ExternalLink, SkipForward, Loader2, Shield
 } from 'lucide-react';
 import { supabase, SiteSettings as DbSiteSettings } from './supabase';
 
@@ -549,10 +549,10 @@ export default function App() {
 
   // Sync initial title if active video is present on load
   useEffect(() => {
-    if (activeVideo) {
+    if (activeVideo && !isTabHidden) {
       document.title = `${activeVideo.title} - Hotness Streaming`;
     }
-  }, [activeVideo]);
+  }, [activeVideo, isTabHidden]);
 
   // 🎬 VAST Ad initialization when a video is clicked
   useEffect(() => {
@@ -675,23 +675,32 @@ export default function App() {
     } catch (e) {}
   }, [userDislikes]);
 
-  // 🛡️ Privacy Shield (Instantly hide on blur / tab switch)
+  // 🛡️ Privacy Shield (Instantly hide on blur / tab switch / minimize across ALL screens)
   useEffect(() => {
     let originalTitle = document.title;
 
     const hideScreen = () => {
       setIsTabHidden(true);
-      originalTitle = document.title;
+      if (document.title !== '🔒 Protected Tab') {
+        originalTitle = document.title;
+      }
       document.title = '🔒 Protected Tab';
-      document.querySelectorAll('video').forEach(v => {
-        try { v.pause(); } catch(e) {}
+      // Pause ALL videos and audio globally across any page or player
+      document.querySelectorAll('video, audio').forEach(el => {
+        try {
+          (el as HTMLMediaElement).pause();
+        } catch (e) {}
       });
     };
 
     const restoreScreen = () => {
       setIsTabHidden(false);
-      if (originalTitle) {
+      if (originalTitle && originalTitle !== '🔒 Protected Tab') {
         document.title = originalTitle;
+      } else if (activeVideo) {
+        document.title = `${activeVideo.title} - Hotness Streaming`;
+      } else {
+        document.title = 'Hotness - Premium Video Streaming Platform';
       }
     };
 
@@ -722,7 +731,7 @@ export default function App() {
       window.removeEventListener('focus', handleWindowFocus);
       window.removeEventListener('pagehide', hideScreen);
     };
-  }, []);
+  }, [activeVideo]);
 
   useEffect(() => {
     if (isSearchOpen && searchInputRef.current) {
@@ -882,7 +891,26 @@ export default function App() {
   }, [videos, activeVideo?.id]);
 
   return (
-    <div className={`min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans selection:bg-red-500 selection:text-white relative ${isTabHidden ? 'filter blur-2xl select-none pointer-events-none opacity-0' : 'transition-opacity duration-200'}`}>
+    <>
+      {/* 🛡️ GLOBAL PRIVACY SHIELD SCREEN (Protected Tab across ALL screens & routes) */}
+      {isTabHidden && (
+        <div className="fixed inset-0 z-[9999999] bg-slate-950 flex flex-col items-center justify-center p-6 text-center select-none cursor-default">
+          <div className="w-20 h-20 rounded-3xl bg-red-600/10 border-2 border-red-500/30 flex items-center justify-center mb-5 text-red-500 shadow-[0_0_50px_rgba(239,68,68,0.2)] animate-pulse">
+            <Shield className="w-10 h-10 stroke-[2.5]" />
+          </div>
+          <h2 className="text-2xl font-black text-white tracking-tight mb-2">
+            Protected Tab
+          </h2>
+          <p className="text-sm text-slate-400 max-w-xs leading-relaxed">
+            ব্যক্তিগত সুরক্ষার জন্য এই পেজের সমস্ত কন্টেন্ট ও ভিডিও প্লেয়ার সাময়িকভাবে লুকানো রয়েছে।
+          </p>
+          <div className="mt-6 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-slate-400">
+            ট্যাবে ফিরে এলে স্ক্রিন স্বয়ংক্রিয়ভাবে আনলক হবে
+          </div>
+        </div>
+      )}
+
+      <div className={`min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans selection:bg-red-500 selection:text-white relative ${isTabHidden ? 'filter blur-3xl select-none pointer-events-none opacity-0 invisible overflow-hidden h-screen' : 'transition-opacity duration-200'}`}>
 
       {/* 
         PREMIUM CLEAN LIGHT THEME HEADER
@@ -1657,5 +1685,6 @@ export default function App() {
       </footer>
 
     </div>
+    </>
   );
 }
